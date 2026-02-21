@@ -44,7 +44,7 @@ If any condition fails → stop, report which condition failed.
 2. Implement requested changes.
 3. Run test, lint, build.
 4. Push fixup commits.
-5. Reply to each review comment with what was done.
+5. Reply to each review comment **on the PR itself** (not Discord/Slack) with what was done.
 
 ## Rules
 
