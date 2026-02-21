@@ -22,7 +22,9 @@ Repo + issue number.
 1. **Repo context check**: Do you have enough context about this repo's conventions and tooling? If not → report to user: "Need to run repo-scan first" and stop.
 2. Read the issue description, all comments, and linked PR (if any).
 3. Analyze the affected code — read relevant files.
-4. Post a comment on the issue:
+4. **Decide**: Is everything clear enough to make a plan?
+   - **If unclear** → Post questions on the issue and stop. Do NOT post a plan yet.
+   - **If clear** → Post a plan comment on the issue:
 
 ```
 ## Plan
@@ -36,12 +38,14 @@ Repo + issue number.
 **Risks/questions**: [if any]
 ```
 
-5. If a linked PR exists, post the same plan there too.
+5. If a linked PR exists (re-plan after `agent:wip` → `agent:plan`), also post on the Issue: 
+ - what went wrong with the current approach 
+ - ask for clarification on what the new plan changes OR just post the new plan (if everything is clear).
 
 ## Rules
 
 - Do NOT change any labels. Only the user changes labels.
 - Do NOT write code or create branches.
 - Do NOT create a PR.
-- If uncertain about the approach, say so in the plan and ask the user.
+- Ask first, plan second. Never assume when multiple valid approaches exist.
 - Keep plan concise. No more than 20 lines.
