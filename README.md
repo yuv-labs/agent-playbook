@@ -27,6 +27,11 @@ maintain-repo/PLAYBOOK.md and follow it to maintain
 github.com/dbqls9713/valuation. Report results here.
 ```
 
+## Agent Behavior Principles
+
+- **Don't repeat yourself**: If you've tried something and it failed, don't retry the same action. Try a different approach or escalate immediately.
+- **Escalate fast**: Being stuck is worse than asking for help. When uncertain or blocked, apply `agent:needs-user` and stop.
+
 ## Structure
 
 Each playbook follows a modular structure to minimize agent context usage:
