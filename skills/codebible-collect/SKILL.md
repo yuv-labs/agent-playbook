@@ -25,6 +25,8 @@ None. Target repos are defined in `codebible/_last_collected.yaml`.
    - If the candidate **improves** an existing rule (better example, clearer explanation) → treat as an update, not a duplicate.
 5. For **each** uncovered candidate, write the rule to a temp file and run:
    `bash agent-playbook/scripts/propose-rule.sh <language> <filename> <rule-file> <source-url> <source-comment>`
+
+   **Filename convention**: Use a specific, descriptive kebab-case filename (e.g., `use-full-words-for-variables.md`) that summarizes the rule. Do NOT use generic category names like `naming.md` or `naming-conventions.md`.
 6. After processing all comments from this PR, update `codebible/_last_collected.yaml` with the PR's merged date.
 
 ## Scope per run
