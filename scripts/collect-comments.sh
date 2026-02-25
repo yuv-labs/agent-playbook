@@ -46,29 +46,40 @@ while IFS=$'\t' read -r repo since; do
     since="${since}T00:00:00Z"
   fi
 
-  # Fetch oldest unprocessed merged PR (one PR per run)
-  pr=$(gh api "repos/$repo/pulls?state=closed&sort=updated&direction=asc&per_page=100" \
-    --jq "[.[] | select(.merged_at != null and .merged_at >= \"$since\")] | .[0].number" 2>/dev/null || true)
+  # Fetch oldest unprocessed merged PRs (all candidates, chronological)
+  # We fetch all candidates so we can iterate and skip empty ones.
+  prs=$(gh api "repos/$repo/pulls?state=closed&sort=updated&direction=asc&per_page=100" \
+    --jq "[.[] | select(.merged_at != null and .merged_at >= \"$since\")] | .[].number" 2>/dev/null || true)
 
-  [[ -z "$pr" || "$pr" == "null" ]] && continue
+  for pr in $prs; do
+    [[ -z "$pr" || "$pr" == "null" ]] && continue
 
-  pr_title=$(gh api "repos/$repo/pulls/$pr" --jq '.title' 2>/dev/null || true)
+    pr_title=$(gh api "repos/$repo/pulls/$pr" --jq '.title' 2>/dev/null || true)
 
-  # Review comments (inline code comments)
-  gh api "repos/$repo/pulls/$pr/comments" --paginate \
-    --jq ".[] | select(.created_at >= \"$since\" and .user.type != \"Bot\") |
-      {repo: \"$repo\", pr_number: $pr, pr_title: \"$pr_title\",
-       author: .user.login, body: .body,
-       path: .path, line: (.original_line // .line),
-       created_at: .created_at, url: .html_url}" 2>/dev/null || true
+    # Review comments (inline code comments)
+    comments=$(gh api "repos/$repo/pulls/$pr/comments" --paginate \
+      --jq ".[] | select(.created_at >= \"$since\" and .user.type != \"Bot\") |
+        {repo: \"$repo\", pr_number: $pr, pr_title: \"$pr_title\",
+         author: .user.login, body: .body,
+         path: .path, line: (.original_line // .line),
+         created_at: .created_at, url: .html_url}" 2>/dev/null || true)
 
-  # Review bodies (top-level review comments, not just approvals)
-  gh api "repos/$repo/pulls/$pr/reviews" --paginate \
-    --jq ".[] | select(.state != \"APPROVED\" and .state != \"DISMISSED\"
-      and .body != \"\" and .body != null
-      and .submitted_at >= \"$since\" and .user.type != \"Bot\") |
-      {repo: \"$repo\", pr_number: $pr, pr_title: \"$pr_title\",
-       author: .user.login, body: .body,
-       path: null, line: null,
-       created_at: .submitted_at, url: .html_url}" 2>/dev/null || true
+    # Review bodies (top-level review comments, not just approvals)
+    reviews=$(gh api "repos/$repo/pulls/$pr/reviews" --paginate \
+      --jq ".[] | select(.state != \"APPROVED\" and .state != \"DISMISSED\"
+        and .body != \"\" and .body != null
+        and .submitted_at >= \"$since\" and .user.type != \"Bot\") |
+        {repo: \"$repo\", pr_number: $pr, pr_title: \"$pr_title\",
+         author: .user.login, body: .body,
+         path: null, line: null,
+         created_at: .submitted_at, url: .html_url}" 2>/dev/null || true)
+
+    # If we found comments or reviews, output them and stop processing this repo (one active PR per run)
+    if [[ -n "$comments" || -n "$reviews" ]]; then
+      [[ -n "$comments" ]] && echo "$comments"
+      [[ -n "$reviews" ]] && echo "$reviews"
+      break
+    fi
+    # If no comments, loop continues to the next PR (skipping empty ones)
+  done
 done <<< "$(parse_repos)"
