@@ -127,9 +127,9 @@ if [[ ${#tasks[@]} -gt 0 ]]; then
 fi
 
 # Print WAIT items after
-for w in "${waits[@]}"; do
-  echo "$w"
-done
+if [[ ${#waits[@]} -gt 0 ]]; then
+  printf '%s\n' "${waits[@]}"
+fi
 
 if [[ ${#tasks[@]} -eq 0 && ${#waits[@]} -eq 0 ]]; then
   echo "Nothing to do."
