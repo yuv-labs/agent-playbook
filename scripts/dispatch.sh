@@ -1,6 +1,10 @@
 #!/bin/bash
 # dispatch.sh - Check issues with agent labels and determine which skills to run.
 # Usage: dispatch.sh <owner/repo1,owner/repo2...> <agent-username>
+#
+# Examples:
+#   dispatch.sh yuv-labs/baduk oclaw97-gif
+#   dispatch.sh yuv-labs/baduk,yuv-labs/agent-playbook oclaw97-gif
 
 set -euo pipefail
 
@@ -95,7 +99,11 @@ check_repo() {
 
 IFS=',' read -ra REPO_LIST <<< "$REPOS_INPUT"
 for repo in "${REPO_LIST[@]}"; do
-  check_repo "$repo"
+  # Trim whitespace
+  repo=$(echo "$repo" | xargs)
+  if [[ -n "$repo" ]]; then
+    check_repo "$repo"
+  fi
 done
 
 # Print RUN items sorted by timestamp (oldest user action first)
