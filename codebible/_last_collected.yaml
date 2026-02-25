@@ -2,4 +2,4 @@
 # Each entry tracks when comments were last collected.
 # Add a repo here to start scanning it. Remove to stop.
 repos:
-  yuv-labs/baduk: null  # null = never collected, will use last 30 days
+  yuv-labs/baduk: 2026-02-21T09:10:40Z
