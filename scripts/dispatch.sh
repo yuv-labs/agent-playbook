@@ -38,6 +38,7 @@ REPO="${1:?Usage: dispatch.sh <owner/repo> <agent-username>}"
 AGENT="${2:?Usage: dispatch.sh <owner/repo> <agent-username>}"
 
 # Find the most recent actor on an issue (and its linked PR).
+# Returns: "<timestamp> <actor>" (e.g. "2026-02-25T12:00:00Z yuv")
 last_actor() {
   local number="$1"
   local latest=""
@@ -80,37 +81,51 @@ last_actor() {
     [[ -n "$pr_issue_comment" && "$pr_issue_comment" > "$latest" ]] && latest="$pr_issue_comment"
   fi
 
-  echo "$latest" | awk '{print $2}'
+  echo "$latest"
 }
 
 echo "=== $REPO ==="
 
-has_tasks=false
+# Collect all tasks, then sort RUN items by user action timestamp (oldest first)
+tasks=()
+waits=()
 
 # agent:plan issues
 while IFS=$'\t' read -r number title; do
   [[ -z "$number" ]] && continue
-  actor=$(last_actor "$number")
+  result=$(last_actor "$number")
+  ts=$(echo "$result" | awk '{print $1}')
+  actor=$(echo "$result" | awk '{print $2}')
   if [[ "$actor" != "$AGENT" ]]; then
-    echo "RUN   repo-plan   #$number  $title"
-    has_tasks=true
+    tasks+=("$ts	RUN   repo-plan   #$number  $title")
   else
-    echo "WAIT  repo-plan   #$number  $title  (user turn)"
+    waits+=("WAIT  repo-plan   #$number  $title  (user turn)")
   fi
 done <<< "$(gh issue list --repo "$REPO" --label "agent:plan" --state open --json number,title --jq '.[] | "\(.number)\t\(.title)"' 2>/dev/null)"
 
 # agent:wip issues
 while IFS=$'\t' read -r number title; do
   [[ -z "$number" ]] && continue
-  actor=$(last_actor "$number")
+  result=$(last_actor "$number")
+  ts=$(echo "$result" | awk '{print $1}')
+  actor=$(echo "$result" | awk '{print $2}')
   if [[ "$actor" != "$AGENT" ]]; then
-    echo "RUN   repo-execute #$number  $title"
-    has_tasks=true
+    tasks+=("$ts	RUN   repo-execute #$number  $title")
   else
-    echo "WAIT  repo-execute #$number  $title  (user turn)"
+    waits+=("WAIT  repo-execute #$number  $title  (user turn)")
   fi
 done <<< "$(gh issue list --repo "$REPO" --label "agent:wip" --state open --json number,title --jq '.[] | "\(.number)\t\(.title)"' 2>/dev/null)"
 
-if [[ "$has_tasks" == false ]]; then
+# Print RUN items sorted by timestamp (oldest user action first)
+if [[ ${#tasks[@]} -gt 0 ]]; then
+  printf '%s\n' "${tasks[@]}" | sort | cut -f2-
+fi
+
+# Print WAIT items after
+for w in "${waits[@]}"; do
+  echo "$w"
+done
+
+if [[ ${#tasks[@]} -eq 0 && ${#waits[@]} -eq 0 ]]; then
   echo "Nothing to do."
 fi
